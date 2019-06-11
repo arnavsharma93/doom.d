@@ -6,10 +6,10 @@
 brew install wordnet
 brew install languagetool
 brew install aspell
+brew install terminal-notifier
 #+END_SRC
 * User Config
-
-** Startup settings
+** Global settings
 Enable emacs mode depending on the file format
 #+BEGIN_SRC emacs-lisp
   (add-to-list 'auto-mode-alist '("\\.avsc\\'" . json-mode))
@@ -17,8 +17,15 @@ Enable emacs mode depending on the file format
   (add-to-list 'auto-mode-alist '("\\.csv\\'" . org-mode))
   (add-to-list 'auto-mode-alist '("\\.zsh\\'" . sh-mode))
 #+END_SRC
+doom theme and mode settings
 #+BEGIN_SRC emacs-lisp
-
+(after! doom-modeline
+  (setq doom-modeline-major-mode-icon t)
+  (setq doom-modeline-buffer-encoding nil)
+  (setq doom-modeline-persp-name t)
+  (setq vc-handled-backends nil)
+  (setq inhibit-compacting-font-caches t)
+  (setq doom-modeline-mu4e t))
 (setq doom-theme 'doom-one-light)
 #+END_SRC
 ** Git
@@ -59,14 +66,18 @@ Keybindings
       :n "B" 'ediff-copy-both-to-C)
 #+end_src
 
+
+#+BEGIN_SRC emacs-lisp
+(setq kill-do-not-save-duplicates t)
+#+END_SRC
 ** Global Keybindings
 #+BEGIN_SRC emacs-lisp
 (after! evil-snipe (evil-snipe-mode -1))
 (map! :n "s" #'save-buffer)
 (setq doom-localleader-key ",")
-
+(map! :after evil
+      :vin "C-y" #'counsel-yank-pop)
 #+END_SRC
-
 #+BEGIN_SRC emacs-lisp
 (map!
  :v "s" #'evil-surround-region
@@ -103,9 +114,25 @@ Avy timer
   (setq avy-all-windows t))
 
 #+END_SRC
+
 ** Searching
 #+BEGIN_SRC emacs-lisp
 (map! :leader "ss" #'swiper)
+#+END_SRC
+
+
+Open links
+#+BEGIN_SRC emacs-lisp
+(map! :leader
+      "x" nil)
+(def-package! link-hint
+  :defer t
+  :init
+  (map! :leader
+        :prefix ("x")
+        "o" 'link-hint-open-link
+        "O" 'link-hint-open-multiple-links
+        "y" 'link-hint-copy-link))
 #+END_SRC
 
 ** Window Movement
@@ -169,15 +196,15 @@ Remap workspaces to ~l~
         (:prefix-map ("l" . "workspace")
           :desc "Display tab bar"           "d" #'+workspace/display
           :desc "Switch workspace"          "l"   #'+workspace/switch-to
-          :desc "New workspace"             "n"   #'+workspace/new
+          :desc "New workspace"             "c"   #'+workspace/new
           :desc "Load workspace from file"  "L"   #'+workspace/load
           :desc "Save workspace to file"    "s"   #'+workspace/save
           :desc "Delete session"            "x"   #'+workspace/kill-session
           :desc "Delete this workspace"     "d"   #'+workspace/delete
           :desc "Rename workspace"          "r"   #'+workspace/rename
           :desc "Restore last session"      "R"   #'+workspace/restore-last-session
-          :desc "Next workspace"            "]"   #'+workspace/switch-right
-          :desc "Previous workspace"        "["   #'+workspace/switch-left
+          :desc "Next workspace"            "n"   #'+workspace/switch-right
+          :desc "Previous workspace"        "p"   #'+workspace/switch-left
           :desc "Switch to 1st workspace"   "1"   (λ! (+workspace/switch-to 0))
           :desc "Switch to 2nd workspace"   "2"   (λ! (+workspace/switch-to 1))
           :desc "Switch to 3rd workspace"   "3"   (λ! (+workspace/switch-to 2))
@@ -190,13 +217,13 @@ Remap workspaces to ~l~
           :desc "Switch to last workspace"  "0"   #'+workspace/switch-to-last)))
 
 (map! :leader
+      :desc "Search project"                "/" #'+default/search-project
       ;;; <leader> p --- project
       (:prefix-map ("p" . "project")
         :desc "Browse project"               "p" #'+default/browse-project
         :desc "Find file in project"  "f"  #'projectile-find-file
         :desc "Switch project"               "l" #'projectile-switch-project
-        :desc "Pop up scratch buffer"        "S" #'doom/open-project-scratch-buffer
-        :desc "Search project"                "/" #'+default/search-project)
+        :desc "Pop up scratch buffer"        "S" #'doom/open-project-scratch-buffer)
       )
 #+END_SRC
 ** Buffers
@@ -225,7 +252,7 @@ Remap workspaces to ~l~
 
       ;;; <leader> s --- snippets
       (:when (featurep! :editor snippets)
-        (:prefix-map ("/" . "snippets")
+        (:prefix-map ("S" . "snippets")
           :desc "New snippet"                "n" #'yas-new-snippet
           :desc "Insert snippet"             "i" #'yas-insert-snippet
           :desc "Jump to mode snippet"       "/" #'yas-visit-snippet-file
@@ -283,59 +310,106 @@ Ivy/Swiper/Counsel
   )
 
 #+end_src
+*** PDF Tools config
+#+BEGIN_SRC emacs-lisp
+(after! (hydra pdf-tools)
+ (defhydra hydra-pdftools (:color blue :hint nil)
+   "
+                                                                      ╭───────────┐
+       Move  History   Scale/Fit     Annotations  Search/Link    Do   │ PDF Tools │
+   ╭──────────────────────────────────────────────────────────────────┴───────────╯
+         ^^_g_^^      _B_    ^↧^    _+_    ^ ^     [_al_] list    [_s_] search    [_u_] revert buffer
+         ^^^↑^^^      ^↑^    _H_    ^↑^  ↦ _W_ ↤   [_am_] markup  [_o_] outline   [_i_] info
+         ^^_p_^^      ^ ^    ^↥^    _0_    ^ ^     [_at_] text    [_F_] link      [_d_] dark mode
+         ^^^↑^^^      ^↓^  ╭─^─^─┐  ^↓^  ╭─^ ^─┐   [_ad_] delete  [_f_] search link
+    _h_ ←pag_e_→ _l_  _N_  │ _P_ │  _-_    _b_     [_aa_] dired
+         ^^^↓^^^      ^ ^  ╰─^─^─╯  ^ ^  ╰─^ ^─╯   [_y_]  yank
+         ^^_n_^^      ^ ^  _r_eset slice box
+         ^^^↓^^^
+         ^^_G_^^
+   --------------------------------------------------------------------------------
+        "
+   ("." hydra-master/body "back")
+   ("<ESC>" nil "quit")
+   ("al" pdf-annot-list-annotations)
+   ("ad" pdf-annot-delete)
+   ("aa" pdf-annot-attachment-dired)
+   ("am" pdf-annot-add-markup-annotation)
+   ("at" pdf-annot-add-text-annotation)
+   ("y"  pdf-view-kill-ring-save)
+   ("+" pdf-view-enlarge :color red)
+   ("-" pdf-view-shrink :color red)
+   ("0" pdf-view-scale-reset)
+   ("H" pdf-view-fit-height-to-window)
+   ("W" pdf-view-fit-width-to-window)
+   ("P" pdf-view-fit-page-to-window)
+   ("n" pdf-view-next-page-command :color red)
+   ("p" pdf-view-previous-page-command :color red)
+   ("d" pdf-view-dark-minor-mode)
+   ("b" pdf-view-set-slice-from-bounding-box)
+   ("r" pdf-view-reset-slice)
+   ("g" pdf-view-first-page)
+   ("G" pdf-view-last-page)
+   ("e" pdf-view-goto-page)
+   ("o" pdf-outline)
+   ("s" pdf-occur)
+   ("i" pdf-misc-display-metadata)
+   ("u" pdf-view-revert-buffer)
+   ("F" pdf-links-action-perfom)
+   ("f" pdf-links-isearch-link)
+   ("B" pdf-history-backward :color red)
+   ("N" pdf-history-forward :color red)
+   ("l" image-forward-hscroll :color red)
+   ("h" image-backward-hscroll :color red))
+
+ )
+#+END_SRC
+#+BEGIN_SRC emacs-lisp
+(after! pdf-tools
+  (setq-default pdf-view-display-size 'fit-page)
+  (map! :map pdf-view-mode-map
+        :localleader
+        "," #'hydra-pdftools/body
+        "<s-spc>"   #'pdf-view-scroll-down-or-next-page
+        "g"   #'pdf-view-first-page
+        "G"   #'pdf-view-last-page
+        "l"   #'image-forward-hscroll
+        "h"   #'image-backward-hscroll
+        "j"   #'pdf-view-next-page
+        "k"   #'pdf-view-previous-page
+        "e"   #'pdf-view-goto-page
+        "u"   #'pdf-view-revert-buffer
+        "al"  #'pdf-annot-list-annotations
+        "ad"  #'pdf-annot-delete
+        "aa"  #'pdf-annot-attachment-dired
+        "am"  #'pdf-annot-add-markup-annotation
+        "at"  #'pdf-annot-add-text-annotation
+        "y"   #'pdf-view-kill-ring-save
+        "i"   #'pdf-misc-display-metadata
+        "s"   #'pdf-occur
+        "b"   #'pdf-view-set-slice-from-bounding-box
+        "r"   #'pdf-view-reset-slice))
+#+END_SRC
+
 ** Eshell
 #+BEGIN_SRC emacs-lisp
   (setq eshell-aliases-file "/Users/arnav/dotfiles/eshell-aliases")
 #+END_SRC
 
-Find eshell buffers
-#+BEGIN_SRC emacs-lisp :tangle no
-;; Very buggy
-(defun buffer-mode (buffer-or-string)
-  "Returns the major mode associated with a buffer."
-  (with-current-buffer buffer-or-string
-    major-mode))
-
-(defun arnav/eshell-new (name)
-  (+eshell/open-popup "~")
-  )
-(defun arnav/check-and-open-eshell-new (name)
-  (if (and (get-buffer name) (string= (buffer-mode name) "eshell-mode"))
-      (progn
-        (switch-to-buffer name nil t))
-    (arnav/eshell-new name)
-    ))
-
-(defun arnav/ivy-eshell-new ()
-  (interactive)
-  ;; find all open buffers of eshell
-  (ivy-read "Eshell Buffers: " (mapcar #'buffer-name
-                                       (cl-remove-if-not
-                                        (lambda (buf)
-                                          (with-current-buffer buf
-                                            (eq major-mode 'eshell-mode)))
-                                        (buffer-list))
-                                       )
-            :action '(1
-                      ("s" arnav/check-and-open-eshell-new "switch to buffer"))
-            ))
-#+END_SRC
 
 Aweshell
 #+BEGIN_SRC emacs-lisp
 (def-package! aweshell
-  :commands aweshell-new
-  :defer
-  :after eshell
   :config
   (map! :leader
-        (:prefix ("a" . "awesomesll")
+        (:prefix ("e" . "awesomesll")
           "c" #'aweshell-new
           "a" #'aweshell-switch-buffer
           "n" #'aweshell-next
           "p" #'aweshell-prev
           "S" #'aweshell-sudo-toggle
           )
+        "'" #'+eshell/split-below
         )
 
   )
@@ -349,41 +423,55 @@ Aweshell
 #+END_SRC
 ** Email
 #+BEGIN_SRC emacs-lisp
-
 (map! :leader
-      "X" nil)
-(map! :leader
-      :desc "Open mu4e" "X" #'mu4e)
+      :desc "Open mu4e" "M" #'mu4e)
 #+END_SRC
 #+BEGIN_SRC emacs-lisp
-(setq +mu4e-backend 'offlineimap)
-(setq mu4e-maildir (expand-file-name "~/.Mail/arnav@uber.com"))
-(setq mu4e-attachment-dir (expand-file-name "~/Downloads"))
+(after! mu4e
+  (setq +mu4e-backend 'offlineimap)
+  (setq mu4e-maildir (expand-file-name "~/.Mail/arnav@uber.com"))
+  (setq mu4e-attachment-dir (expand-file-name "~/Downloads"))
+  (setq mu4e-update-interval (* 5 60))
 
-#+END_SRC
-
-Gmail specific settings
-#+begin_src emacs-lisp
   (setq mail-user-agent 'mu4e-user-agent)
-
+  (setq mu4e-change-filenames-when-moving nil)
+  (setq mu4e-refile-folder "/Archive")
   (setq mu4e-drafts-folder "/[Gmail].Drafts")
   (setq mu4e-sent-folder   "/[Gmail].Sent Mail")
   (setq mu4e-trash-folder  "/[Gmail].Trash")
   (setq mu4e-sent-messages-behavior 'delete)
 
   (setq mu4e-maildir-shortcuts
-      '( ("/[Gmail].Important" . ?i)
-         ("/[Gmail].Sent Mail"   . ?s)
-         ("/[Gmail].Trash"       . ?t)
-         ("/[Gmail].All Mail"    . ?a)))
+        '( ("/INBOX" . ?i)
+           ("/[Gmail].Sent Mail"   . ?s)
+           ("/1.Phabricator.Diffs"       . ?d)
+           ("/[Gmail].Trash"       . ?t)
+           ("/1.Phabricator.Tasks"    . ?T)))
 
   (setq mu4e-get-mail-command "offlineimap")
 
   (setq
-     user-mail-address "arnav@uber.com"
-     user-full-name  "Arnav Sharma"
-     mu4e-compose-signature "Arnav Sharma\n")
+   user-mail-address "arnav@uber.com"
+   user-full-name  "Arnav Sharma"
+   mu4e-compose-signature "Arnav Sharma\n")
+  )
 #+end_src
+
+Alert
+#+BEGIN_SRC emacs-lisp
+(def-package! mu4e-alert
+  :after mu4e
+  :init
+  (setq mu4e-alert-interesting-mail-query
+        (concat
+         "flag:unread"
+         "AND NOT from:umonitor*"
+         "AND NOT from:code.uberinternal*"))
+        (mu4e-alert-set-default-style 'notifier)
+        :config
+        (mu4e-alert-enable-mode-line-display)
+        (mu4e-alert-enable-notifications))
+#+END_SRC
 
 SMTP settings
 #+begin_src emacs-lisp
@@ -400,8 +488,7 @@ SMTP settings
 #+end_src
 
 [[https://github.com/abo-abo/hydra/wiki/mu4e][abo-abo mu4e hydra]]
-#+begin_src emacs-lisp :tangle no
-(after! (hydra mu4e)
+#+begin_src emacs-lisp
   (defhydra hydra-mu4e-headers (:color blue :hint nil)
     "
      ^General^   | ^Search^           | _!_: read    | _#_: deferred  | ^Switches^
@@ -437,6 +524,7 @@ SMTP settings
     ("}" mu4e-headers-query-next)              ; differs from built-in
     ("C-+" mu4e-headers-split-view-grow)
     ("C--" mu4e-headers-split-view-shrink)
+    ("o" arnav/org-capture-mu4e)
 
     ;; mark stuff
     ("!" mu4e-headers-mark-for-read)
@@ -477,11 +565,27 @@ SMTP settings
     ("j" mu4e~headers-jump-to-maildir)
 
     ("." nil))
-
-  (map! :map mu4e-headers-mode-map
-        "h"  #'hydra-mu4e-headers/body))
 #+end_src
-
+#+BEGIN_SRC emacs-lisp
+;; neeed to define a mode to get this to work
+(after! (mu4e evil)
+  (add-to-list 'mu4e-bookmarks
+               (make-mu4e-bookmark
+                :name  "Arnav messages"
+                :query "date:1d..now and arnav and not to:arnav"
+                :key ?a))
+  (map! (:map (mu4e-headers-mode-map mu4e-view-mode-map)
+          :n "."  #'hydra-mu4e-headers/body
+          :n "O" #'arnav/org-capture-mu4e))
+  (map! :map mu4e-main-mode-map
+          :ivmno "j" #'mu4e~headers-jump-to-maildir))
+#+END_SRC
+#+BEGIN_SRC emacs-lisp
+(def-package! org-mu4e
+  :after org
+  :config
+  (setq org-mu4e-link-query-in-headers-mode nil))
+#+END_SRC
 #+BEGIN_SRC emacs-lisp
 (map! :map mu4e-headers-mode-map
       "{"  #'mu4e-headers-query-prev
@@ -493,6 +597,7 @@ SMTP settings
       "`"  #'mu4e-update-mail-and-index
       "|"  #'mu4e-view-pipe)
 #+END_SRC
+
 ** Go mode
 Golangci linting
 #+BEGIN_SRC emacs-lisp
@@ -542,7 +647,8 @@ Keymaps
 (map! :mode go-mode
       :localleader
       (:prefix ("g" . "go to")
-      "ga" #'ff-find-other-file))
+      "a" #'ff-find-other-file))
+
 #+END_SRC
 Jumping here and there
 #+BEGIN_SRC emacs-lisp
@@ -559,7 +665,7 @@ Jumping here and there
    :desc "peek references" "D" #'lsp-ui-peek-find-references)
 #+END_SRC
 ** Org mode
-*** Generic keybindings
+*** Generic
 #+BEGIN_SRC emacs-lisp
 (map! :localleader
       :after org
@@ -574,6 +680,11 @@ Jumping here and there
       :n "s" #'org-edit-src-save)
 #+END_SRC
 
+Enable autoalist mode
+#+BEGIN_SRC emacs-lisp
+(def-package! org-autolist
+  :hook (org-mode . org-autolist-mode))
+#+END_SRC
 *** Journaling or trying to
 
 #+BEGIN_SRC emacs-lisp
@@ -583,8 +694,9 @@ Jumping here and there
   :config
   (setq
         org-journal-dir "~/Dropbox/org/journal/"
-        org-journal-file-format "%Y-%m-%d.org"
+        org-journal-file-format "%Y-%m-%d"
         org-journal-date-prefix "#+TITLE: "
+        org-journal-enable-agenda-integration t
         org-journal-date-format "%A, %B %d %Y"
         org-journal-time-prefix "* "
         org-journal-time-format "")
@@ -655,8 +767,8 @@ Jumping here and there
 (setq arnav/tickler-file "~/Dropbox/org/gtd/tickler.org")
 (setq arnav/uber-calendar-file "~/Dropbox/org/calendar/arnav@uber.org")
 (map! :leader
-      "x" nil
-      (:prefix "x"
+      "a" nil
+      (:prefix "a"
         (:prefix ("g". "goto")
           :desc "open inbox file" "i" (λ! (find-file arnav/inbox-file) )
           :desc "open gtd file" "g" (λ! (find-file arnav/gtd-file) )
@@ -664,7 +776,7 @@ Jumping here and there
           :desc "open someday file" "s" (λ! (find-file arnav/someday-file) )
           :desc "open tickler file" "T" (λ! (find-file arnav/tickler-file) )
           )
-        "x" #'org-agenda-list
+        "l" #'org-agenda-list
         "c" #'org-capture
         "a" #'org-agenda))
 
@@ -710,6 +822,20 @@ Jumping here and there
               :localleader
               "," #'org-capture-finalize
               "k" #'org-capture-kill))
+#+END_SRC
+#+BEGIN_SRC emacs-lisp
+
+(defun arnav/org-capture-mu4e ()
+  (interactive)
+  "Capture a TODO item via email."
+  (let ((org-capture-templates '(("o" "Email [inbox]" entry
+                                 (file+headline "~/Dropbox/org/gtd/inbox.org" "Tasks")
+                                 (file "~/Dropbox/org/templates/email.orgcaptmpl")
+                                 :empty-lines 1)
+                                )))
+
+    (org-capture nil "o"))
+  )
 #+END_SRC
 #+BEGIN_SRC emacs-lisp
 (after! org
@@ -874,7 +1000,7 @@ _vr_ reset      ^^                       ^^                 ^^
   (setq org-gcal-auto-archive t)
   (setq org-gcal-down-days 30)
   (setq org-gcal-up-days 30)
-  (run-with-timer 0 (* 10 60) 'org-gcal-sync)
+  (run-with-timer 0 (* 10 60) 'org-gcal-fetch)
   )
 #+END_SRC
 *** Clocking

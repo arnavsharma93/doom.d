@@ -17,3 +17,7 @@
 (package! aweshell
   :recipe (:fetcher github
   :repo "manateelazycat/aweshell"))
+(package! mu4e-alert)
+(package! link-hint)
+(package! pandoc-mode)
+(package! org-autolist)
