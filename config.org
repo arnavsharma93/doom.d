@@ -414,6 +414,23 @@ Aweshell
 
   )
 #+END_SRC
+** Private
+
+#+begin_src emacs-lisp
+(defun arnav/ussh ()
+  (interactive)
+  (async-shell-command "ussh"))
+
+(defun arnav/insert-pass ()
+  (interactive)
+  (insert "IWork@Ub3rFin3ng"))
+
+(map! :leader
+      "C-u" #'arnav/ussh)
+
+(map! :map minibuffer-local-map
+      "M-u" #'arnav/insert-pass)
+#+end_src
 ** Completions/LSP
 #+BEGIN_SRC emacs-lisp
 (after! lsp
