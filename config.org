@@ -795,7 +795,7 @@ Enable autoalist mode
 
 #+END_SRC
 
-**** Org mode files
+**** Agenda
 #+BEGIN_SRC emacs-lisp
 (setq arnav/inbox-file "~/Dropbox/org/gtd/inbox.org")
 (setq arnav/gtd-file "~/Dropbox/org/gtd/gtd.org")
@@ -813,9 +813,13 @@ Enable autoalist mode
           :desc "open someday file" "s" (λ! (find-file arnav/someday-file) )
           :desc "open tickler file" "T" (λ! (find-file arnav/tickler-file) )
           )
-        "l" #'org-agenda-list
+        "a" #'org-agenda-list
         "c" #'org-capture
-        "a" #'org-agenda))
+        "l" #'org-agenda))
+
+ (setq org-global-properties
+       '(("Effort_ALL" .
+          "0:15 0:30 0:45 1:00 2:00 3:00 4:00 5:00 6:00 8:00")))
 
 (setq org-refile-targets '((arnav/gtd-file :maxlevel . 1)
                            (arnav/someday-file :level . 1)
@@ -833,32 +837,41 @@ Enable autoalist mode
 **** Org capture templates
 #+BEGIN_SRC emacs-lisp
 (after! org
-        (setq org-capture-templates '(("t" "Todo [inbox]" entry
-                                       (file+headline "~/Dropbox/org/gtd/inbox.org" "Tasks")
-                                       (file "~/Dropbox/org/templates/todo.orgcaptmpl")
-                                       :empty-lines 1)
-                                      ("f" "Task [inbox]" entry
-                                       (file+headline "~/Dropbox/org/gtd/inbox.org" "Tasks")
-                                       (file "~/Dropbox/org/templates/task.orgcaptmpl")
-                                       :empty-lines 1)
-                                      ("a" "Appointment" entry
-                                       (file  "~/Dropbox/org/calendar/arnav@uber.org" )
-                                       "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
-                                      ("T" "Tickler" entry
-                                       (file+headline "~/Dropbox/org/gtd/tickler.org" "Tickler")
-                                       "* %i%? \n %U" :empty-lines 1)
-                                      ("i" "Interview"
-                                       entry
-                                       (file "~/Dropbox/org/interviews.org")
-                                       (file "~/Dropbox/org/templates/interview.orgcaptmpl"))
-                                      ("n" "Note" entry
-                                       (file+headline "~/Dropbox/org/notes.org" "Notes")
-                                       "* %i%? %^g\nLogged on %U" :empty-lines 1)
-                                      ))
-        (map! :map org-capture-mode-map
-              :localleader
-              "," #'org-capture-finalize
-              "k" #'org-capture-kill))
+  (setq org-capture-templates '(("t" "Todo [inbox]" entry
+                                 (file+headline "~/Dropbox/org/gtd/inbox.org" "Tasks")
+                                 (file "~/Dropbox/org/templates/todo.orgcaptmpl")
+                                 :empty-lines 1)
+                                ("n" "Note" entry
+                                 (file "~/Dropbox/org/notes.org")
+                                 (file "~/Dropbox/org/templates/note.orgcaptmpl")
+                                 :empty-lines 1)
+                                ("f" "Task [inbox]" entry
+                                 (file+headline "~/Dropbox/org/gtd/inbox.org" "Tasks")
+                                 (file "~/Dropbox/org/templates/task.orgcaptmpl")
+                                 :empty-lines 1)
+                                ("T" "Tickler" entry
+                                 (file+headline "~/Dropbox/org/gtd/tickler.org" "Tickler")
+                                 "* %i%? \n %U" :empty-lines 1)
+                                ("i" "Interview"
+                                 entry
+                                 (file "~/Dropbox/org/interviews.org")
+                                 (file "~/Dropbox/org/templates/interview.orgcaptmpl")
+                                 :empty-lines 1)
+                                 )
+                                ))
+  (map! :map org-capture-mode-map
+        :localleader
+        "," #'org-capture-finalize
+        "k" #'org-capture-kill))
+(def-package! org-protocol-capture-html
+  :ensure t)
+
+#+END_SRC
+#+BEGIN_SRC emacs-lisp
+(map! :map org-mode-map
+      :after org
+      :n "M-l" #'org-shiftmetaright)
+
 #+END_SRC
 #+BEGIN_SRC emacs-lisp
 
@@ -964,7 +977,7 @@ _vr_ reset      ^^                       ^^                 ^^
 **** Super agenda
 #+begin_src emacs-lisp
 (def-package! org-super-agenda
-  :after org-agenda
+  :after org-agenda evil
   :init
   (setq org-agenda-span 'day)
   (setq org-agenda-start-day nil)
@@ -977,8 +990,12 @@ _vr_ reset      ^^                       ^^                 ^^
                  ;; their order is unspecified, defaulting to 0. Sections
                  ;; are displayed lowest-number-first.
                  :order 0)
+          (:auto-property "with")
+          (:discard
+           (:regexp ("gym" "deployment" "yoga" "office hours")))
           (:name "Today"  ; Optionally specify section name
                  :todo ("INPROGRESS" "TODO")
+                 :time-grid t
                  :order 1)  ; Items that have this TODO keyword
           ;; Set order of multiple groups at once
           (:order-multi (2 (:name "Waiting"
