@@ -56,20 +56,21 @@ Keybindings
       "," #'with-editor-finish
       "c" #'with-editor-finish
       "k" #'with-editor-cancel)
+(after! magit-todos
+  (setq magit-todos-update nil))
 #+END_SRC
 
 #+begin_src emacs-lisp
+;; refactor this
 (defun ediff-copy-both-to-C ()
   (interactive)
   (ediff-copy-diff ediff-current-difference nil 'C nil
                    (concat
                     (ediff-get-region-contents ediff-current-difference 'A ediff-control-buffer)
                     (ediff-get-region-contents ediff-current-difference 'B ediff-control-buffer))))
+(defun add-d-to-ediff-mode-map () (define-key ediff-mode-map "B" 'ediff-copy-both-to-C))
 (add-hook 'ediff-keymap-setup-hook 'add-d-to-ediff-mode-map)
-(map! :map ediff-mode-map
-      :n "B" 'ediff-copy-both-to-C)
 #+end_src
-
 
 #+BEGIN_SRC emacs-lisp
 (setq kill-do-not-save-duplicates t)
@@ -191,11 +192,23 @@ Open links
 
 #+END_SRC
 
+#+BEGIN_SRC emacs-lisp
+;; rebuild cache on project checkout
+(defun run-projectile-invalidate-cache (&rest _args)
+  ;; We ignore the args to `magit-checkout'.
+  (projectile-invalidate-cache nil))
+(advice-add 'magit-checkout
+            :after #'run-projectile-invalidate-cache)
+(advice-add 'magit-branch-and-checkout ; This is `b c'.
+            :after #'run-projectile-invalidate-cache)
+#+END_SRC
 
 Remap workspaces to ~l~
 #+BEGIN_SRC emacs-lisp
 
+
 (map! :leader
+      :after ivy
       (:when (featurep! :ui workspaces)
         (:prefix-map ("l" . "workspace")
           :desc "Display tab bar"           "d" #'+workspace/display
