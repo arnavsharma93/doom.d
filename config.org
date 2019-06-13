@@ -28,6 +28,10 @@ doom theme and mode settings
   (setq doom-modeline-mu4e t))
 (setq doom-theme 'doom-one-light)
 #+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(setq exec-path-from-shell-check-startup-files nil)
+#+END_SRC
 ** Git
 Set =giteditor= as emacs using =witheditor=
 #+BEGIN_SRC emacs-lisp
