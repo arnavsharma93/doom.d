@@ -641,9 +641,8 @@ SMTP settings
 ** Go mode
 Golangci linting
 #+BEGIN_SRC emacs-lisp
-(def-package! flycheck-golangci-lint
-  :init
-  (setq flycheck-golangci-lint-config "~/.golangci.yml")
+(use-package flycheck-golangci-lint
+  :ensure t
   :hook (go-mode . flycheck-golangci-lint-setup))
 #+END_SRC
 Test stubbing
@@ -662,8 +661,6 @@ Test stubbing
         )
 
   )
-
-
 #+END_SRC
 
 Refactor
@@ -698,11 +695,11 @@ Jumping here and there
  :prefix "c"
    :desc "page menu" "M" #'lsp-ui-imenu
    :desc "show doc" "c" #'lsp-describe-thing-at-point
-   :desc "restart lsp" "R" #'lsp-restart-workspace
-   :desc "lsp rename" "r" #'lsp-rename
+   :desc "restart lsp" "M-r" #'lsp-restart-workspace
+   :desc "lsp rename" "R" #'lsp-rename
    :desc "find implementations" "i" #'lsp-find-implementation
    :desc "peek definition" "d" #'lsp-ui-peek-find-definitions
-   :desc "peek references" "D" #'lsp-ui-peek-find-references)
+   :desc "peek references" "r" #'lsp-ui-peek-find-references)
 #+END_SRC
 ** Org mode
 *** Generic
