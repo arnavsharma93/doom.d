@@ -390,7 +390,7 @@ Ivy/Swiper/Counsel
   (setq-default pdf-view-display-size 'fit-page)
   (map! :map pdf-view-mode-map
         :localleader
-        "," #'hydra-pdftools/body
+        "." #'hydra-pdftools/body
         "<s-spc>"   #'pdf-view-scroll-down-or-next-page
         "g"   #'pdf-view-first-page
         "G"   #'pdf-view-last-page
@@ -460,6 +460,10 @@ Aweshell
   (setq company-lsp-cache-candidates 'auto))
 #+END_SRC
 ** Email
+
+#+BEGIN_SRC emacs-lisp
+(setq mu4e-mu-binary "/usr/local/bin/mu")
+#+END_SRC
 #+BEGIN_SRC emacs-lisp
 (map! :leader
       :desc "Open mu4e" "M" #'mu4e)
@@ -502,9 +506,9 @@ Alert
   :init
   (setq mu4e-alert-interesting-mail-query
         (concat
-         "flag:unread"
-         "AND NOT from:umonitor*"
-         "AND NOT from:code.uberinternal*"))
+         "flag:unread "
+         "AND NOT from:umonitor* "
+         "AND NOT from:code.uberinternal* "))
         (mu4e-alert-set-default-style 'notifier)
         :config
         (mu4e-alert-enable-mode-line-display)
@@ -606,17 +610,15 @@ SMTP settings
 #+end_src
 #+BEGIN_SRC emacs-lisp
 ;; neeed to define a mode to get this to work
-(after! (mu4e evil)
+(after! mu4e
   (add-to-list 'mu4e-bookmarks
                (make-mu4e-bookmark
                 :name  "Arnav messages"
                 :query "date:1d..now and arnav and not to:arnav"
                 :key ?a))
-  (map! (:map (mu4e-headers-mode-map mu4e-view-mode-map)
+  (map! (:map (mu4e-headers-mode-map mu4e-view-mode-map mu4e-compose-mode-map)
           :n "."  #'hydra-mu4e-headers/body
-          :n "O" #'arnav/org-capture-mu4e))
-  (map! :map mu4e-main-mode-map
-          :ivmno "j" #'mu4e~headers-jump-to-maildir))
+          :n "O" #'arnav/org-capture-mu4e)))
 #+END_SRC
 #+BEGIN_SRC emacs-lisp
 (def-package! org-mu4e
