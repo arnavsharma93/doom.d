@@ -21,3 +21,6 @@
 (package! link-hint)
 (package! pandoc-mode)
 (package! org-autolist)
+(package! org-protocol-capture-html
+  :recipe (:fetcher github
+  :repo "alphapapa/org-protocol-capture-html"))

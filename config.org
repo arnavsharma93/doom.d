@@ -630,7 +630,7 @@ SMTP settings
 (map! :map mu4e-headers-mode-map
       "{"  #'mu4e-headers-query-prev
       "}"  #'mu4e-headers-query-next
-      ;; "o"  #'my/org-capture-mu4e
+       "O"  #'my/org-capture-mu4e
 
       "A"  #'mu4e-headers-mark-for-action
 
@@ -642,7 +642,6 @@ SMTP settings
 Golangci linting
 #+BEGIN_SRC emacs-lisp
 (use-package flycheck-golangci-lint
-  :ensure t
   :hook (go-mode . flycheck-golangci-lint-setup))
 #+END_SRC
 Test stubbing
@@ -856,15 +855,13 @@ Enable autoalist mode
                                  entry
                                  (file "~/Dropbox/org/interviews.org")
                                  (file "~/Dropbox/org/templates/interview.orgcaptmpl")
-                                 :empty-lines 1)
-                                 )
-                                ))
+                                 :empty-lines 1)))
   (map! :map org-capture-mode-map
         :localleader
         "," #'org-capture-finalize
         "k" #'org-capture-kill))
-(def-package! org-protocol-capture-html
-  :ensure t)
+
+(def-package! org-protocol-capture-html)
 
 #+END_SRC
 #+BEGIN_SRC emacs-lisp
@@ -1003,22 +1000,21 @@ _vr_ reset      ^^                       ^^                 ^^
                                   )
                            (:name "Done"
                                   :todo ("DONE"))))
-          (:auto-property "with")
-          (:name "Lead tasks"
-                 ;; Single arguments given alone
-                 :todo "TASK"
-                 )
-          (:discard
-           (:regexp ("gym" "deployment" "yoga" "office hours")))
-          (:name "Calendar"
-                 :time-grid t
-                 :order 5
-                 )
-          ;; After the last group, the agenda will display items that didn't
-          ;; match any of these groups, with the default order position of 99
-          ))
+          ;; (:name "Lead tasks"
+          ;;        ;; Single arguments given alone
+          ;;        :todo "TASK"
+          ;;        :order 5
+
+          )
+        ;; (:name "Calendar"
+        ;;        :order 5
+        ;;        )
+        ;; After the last group, the agenda will display items that didn't
+        ;; match any of these groups, with the default order position of 99
+        )
   :config
   (org-super-agenda-mode)
+  (setq org-super-agenda-header-map (make-sparse-keymap))
   )
 #+end_src
 
@@ -1054,8 +1050,7 @@ _vr_ reset      ^^                       ^^                 ^^
   (setq org-gcal-auto-archive t)
   (setq org-gcal-down-days 30)
   (setq org-gcal-up-days 30)
-  (run-with-timer 0 (* 10 60) 'org-gcal-fetch)
-  )
+  (run-with-timer 0 (* 10 60) 'org-gcal-fetch))
 #+END_SRC
 *** Clocking
 
@@ -1096,6 +1091,13 @@ _vr_ reset      ^^                       ^^                 ^^
 #+BEGIN_SRC emacs-lisp
 (after! org
   (add-to-list 'org-latex-packages-alist '("" "minted"))
+(add-to-list 'org-latex-listings-langs '(java "java"))
+
+   (setq org-latex-pdf-process
+         '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+           "bibtex %b"
+           "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+           "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
 
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -1106,7 +1108,6 @@ _vr_ reset      ^^                       ^^                 ^^
      (latex . t)))
   (setq org-plantuml-jar-path
         (expand-file-name "/usr/local/Cellar/plantuml/1.2019.5/libexec/plantuml.jar"))
-
 
   )
 
