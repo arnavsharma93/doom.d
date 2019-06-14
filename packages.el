@@ -5,7 +5,6 @@
 ;; (package! some-package)
 ;; (package! another-package :recipe (:fetcher github :repo "username/repo"))
 ;; (package! builtin-package :disable t)
-(disable-packages! evil-snipe)
 (package! tldr)
 (package! alert)
 (package! flycheck-golangci-lint)
@@ -23,4 +22,5 @@
 (package! org-autolist)
 (package! org-protocol-capture-html
   :recipe (:fetcher github
-  :repo "alphapapa/org-protocol-capture-html"))
+                    :repo "alphapapa/org-protocol-capture-html"))
+(package! deadgrep)

@@ -10,7 +10,13 @@ brew install terminal-notifier
 #+END_SRC
 * User Config
 ** Global settings
+
 Enable emacs mode depending on the file format
+#+BEGIN_SRC emacs-lisp
+;; * Config
+(setq +file-templates-dir "~/.doom.d/templates"
+      max-specpdl-size 10000)
+#+END_SRC
 #+BEGIN_SRC emacs-lisp
   (add-to-list 'auto-mode-alist '("\\.avsc\\'" . json-mode))
   (add-to-list 'auto-mode-alist '("\\.lock\\'" . toml-mode))
@@ -28,9 +34,95 @@ doom theme and mode settings
   (setq doom-modeline-mu4e t))
 (setq doom-theme 'doom-one-light)
 #+END_SRC
+#+BEGIN_SRC emacs-lisp
+(after! hydra
+ (defhydra hydra-dired (:hint nil :color pink)
+   "
+_+_ mkdir          _v_iew           _m_ark             _(_ details        _i_nsert-subdir    wdired
+_C_opy             _O_ view other   _U_nmark all       _)_ omit-mode      _$_ hide-subdir    C-x C-q : edit
+_D_elete           _o_pen other     _u_nmark           _l_ redisplay      _w_ kill-subdir    C-c C-c : commit
+_R_ename           _M_ chmod        _t_oggle           _g_ revert buf     _e_ ediff          C-c ESC : abort
+_Y_ rel symlink    _G_ chgrp        _E_xtension mark   _s_ort             _=_ pdiff
+_S_ymlink          ^ ^              _F_ind marked      _._ toggle hydra   \\ flyspell
+_r_sync            ^ ^              ^ ^                ^ ^                _?_ summary
+_z_ compress-file  _A_ find regexp
+_Z_ compress       _Q_ repl regexp
 
+T - tag prefix
+"
+   ("\\" dired-do-ispell)
+   ("(" dired-hide-details-mode)
+   (")" dired-omit-mode)
+   ("+" dired-create-directory)
+   ("=" diredp-ediff)         ;; smart diff
+   ("?" dired-summary)
+   ("$" diredp-hide-subdir-nomove)
+   ("A" dired-do-find-regexp)
+   ("C" dired-do-copy)        ;; Copy all marked files
+   ("D" dired-do-delete)
+   ("E" dired-mark-extension)
+   ("e" dired-ediff-files)
+   ("F" dired-do-find-marked-files)
+   ("G" dired-do-chgrp)
+   ("g" revert-buffer)        ;; read all directories again (refresh)
+   ("i" dired-maybe-insert-subdir)
+   ("l" dired-do-redisplay)   ;; relist the marked or singel directory
+   ("M" dired-do-chmod)
+   ("m" dired-mark)
+   ("O" dired-display-file)
+   ("o" dired-find-file-other-window)
+   ("Q" dired-do-find-regexp-and-replace)
+   ("R" dired-do-rename)
+   ("r" dired-do-rsynch)
+   ("S" dired-do-symlink)
+   ("s" dired-sort-toggle-or-edit)
+   ("t" dired-toggle-marks)
+   ("U" dired-unmark-all-marks)
+   ("u" dired-unmark)
+   ("v" dired-view-file)      ;; q to exit, s to search, = gets line #
+   ("w" dired-kill-subdir)
+   ("Y" dired-do-relsymlink)
+   ("z" diredp-compress-this-file)
+   ("Z" dired-do-compress)
+   ("q" nil)
+   ("." nil :color blue))
+ (map! :map dired-mode-map :n "?" #'hydra-dired/body))
+
+
+
+#+END_SRC
 #+BEGIN_SRC emacs-lisp
 (setq exec-path-from-shell-check-startup-files nil)
+#+END_SRC
+** Popup
+#+BEGIN_SRC emacs-lisp
+
+(set-popup-rule! "^\\*Customize.*" :slot 2 :side 'right :modeline nil :select t :quit t)
+(set-popup-rule! " \\*undo-tree\\*" :slot 2 :side 'left :size 20 :modeline nil :select t :quit t)
+(set-popup-rule! "^\\*Password-Store" :side 'left :size 0.25)
+
+
+;; * help
+(set-popup-rule! "^\\*info.*" :size 82 :side 'right :ttl t :select t :quit t)
+(set-popup-rule! "^\\*Man.*" :size 82 :side 'right :ttl t :select t :quit t)
+(set-popup-rule! "^\\*tldr\\*" :size 82 :side 'right :select t :quit t)
+(set-popup-rule! "^\\*helpful.*" :size 82 :side 'right :select t :quit t)
+(set-popup-rule! "^\\*Help.*" :size 82 :height 0.6 :side 'right :select t :quit t)
+(set-popup-rule! "^ \\*Metahelp.*" :size 82 :side 'right :select t :quit t)
+(set-popup-rule! "^\\*Apropos.*" :size 82 :height 0.6 :side 'right :select t :quit t)
+(set-popup-rule! "^\\*Messages\\*" :vslot -10 :height 10 :side 'bottom :select t :quit t :ttl nil)
+
+
+;; (set-popup-rule! "^ ?\\*NeoTree" :side ,neo-window-position :width ,neo-window-width :quit 'current :select t)
+(set-popup-rule! "\\*VC-history\\*" :slot 2 :side 'right :size 82 :modeline nil :select t :quit t)
+
+(set-popup-rule! "\\*xwidget" :side 'right :size 100 :select t)
+
+;; * lang
+(after! org
+  (set-popup-rule! "^\\*Org Src" :side 'bottom :slot -2 :height 0.6 :width 0.5 :select t :autosave t :ttl nil :quit nil :select t))
+
+
 #+END_SRC
 ** Git
 Set =giteditor= as emacs using =witheditor=
@@ -77,8 +169,8 @@ Keybindings
 #+END_SRC
 ** Global Keybindings
 #+BEGIN_SRC emacs-lisp
-(after! evil-snipe (evil-snipe-mode -1))
-(map! :n "s" #'save-buffer)
+(map! :leader
+      :nmg "SPC" #'save-buffer)
 (setq doom-localleader-key ",")
 (map! :after evil
       :vin "C-y" #'counsel-yank-pop)
@@ -99,7 +191,7 @@ Keybindings
         (:when (featurep! :tools magit)
           :desc "Magit dispatch"            "m"   #'magit-dispatch
           :desc "Forge dispatch"            "'"   #'forge-dispatch
-          :desc "Magit status"              "s"   #'magit-status
+         :desc "Magit status"              "s"   #'magit-status
           :desc "Magit blame"               "b"   #'magit-blame-addition))
       )
 #+END_SRC
@@ -115,17 +207,18 @@ Avy timer
 #+BEGIN_SRC emacs-lisp
 (map! "C-s" 'evil-avy-goto-char-timer
       "C-l" 'evil-avy-goto-line)
-(after! avy
-  (setq avy-all-windows t))
+(setq avy-all-windows t)
 
 #+END_SRC
 
 ** Searching
 #+BEGIN_SRC emacs-lisp
-(map! :leader "ss" #'swiper)
+(map! :leader
+      :prefix "s"
+      "D" #'deadgrep
+      "s" #'swiper)
+
 #+END_SRC
-
-
 Open links
 #+BEGIN_SRC emacs-lisp
 (map! :leader
@@ -148,6 +241,8 @@ Open links
       "wd" #'evil-quit
       "wD" #'ace-delete-window
       )
+
+
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -165,9 +260,10 @@ Open links
  (setq aw-keys '(?a ?s ?d ?f ?j ?k ?l)
        aw-dispatch-always t
        aw-dispatch-alist
-       '((?d aw-delete-window "Ace - Delete Window")
+       '((?x aw-delete-window "Ace - Delete Window")
          (?c aw-swap-window "Ace - Swap Window")
          (?n aw-flip-window)
+         (?j aw-switch-buffer-in-window " Ace - Select Buffer")
          (?v aw-split-window-vert "Ace - Split Vert Window")
          (?h aw-split-window-horz "Ace - Split Horz Window")
          (?m delete-other-windows "Ace - Maximize Window")
@@ -518,19 +614,20 @@ Alert
 SMTP settings
 #+begin_src emacs-lisp
 (after! smtpmail
-(setq message-send-mail-function 'smtpmail-send-it
+  (setq message-send-mail-function 'smtpmail-send-it
         starttls-use-gnutls t
         smtpmail-starttls-credentials '(("smtp.gmail.com" 587 nil nil))
         smtpmail-auth-credentials
-          '(("smtp.gmail.com" 587 "arnav@uber.com" nil))
+        '(("smtp.gmail.com" 587 "arnav@uber.com" nil))
         smtpmail-default-smtp-server "smtp.gmail.com"
         smtpmail-smtp-server "smtp.gmail.com"
         smtpmail-smtp-service 587)
-     (setq message-kill-buffer-on-exit t))
+  (setq message-kill-buffer-on-exit t))
 #+end_src
 
 [[https://github.com/abo-abo/hydra/wiki/mu4e][abo-abo mu4e hydra]]
 #+begin_src emacs-lisp
+(after! (hydra mu4e)
   (defhydra hydra-mu4e-headers (:color blue :hint nil)
     "
      ^General^   | ^Search^           | _!_: read    | _#_: deferred  | ^Switches^
@@ -554,7 +651,6 @@ SMTP settings
     ("R" mu4e-compose-reply)
     ("C" mu4e-compose-new)
     ("F" mu4e-compose-forward)
-    ("o" my/org-capture-mu4e)                  ; differs from built-in
 
     ;; search
     ("s" mu4e-headers-search)
@@ -566,7 +662,7 @@ SMTP settings
     ("}" mu4e-headers-query-next)              ; differs from built-in
     ("C-+" mu4e-headers-split-view-grow)
     ("C--" mu4e-headers-split-view-shrink)
-    ("o" arnav/org-capture-mu4e)
+    ("O" arnav/org-capture-mu4e)
 
     ;; mark stuff
     ("!" mu4e-headers-mark-for-read)
@@ -595,7 +691,7 @@ SMTP settings
     ("|" mu4e-view-pipe)                       ; does not seem built-in any longer
 
     ;; switches
-    ("O" mu4e-headers-change-sorting)
+    ("o" mu4e-headers-change-sorting)
     ("P" mu4e-headers-toggle-threading)
     ("Q" mu4e-headers-toggle-full-search)
     ("V" mu4e-headers-toggle-skip-duplicates)
@@ -606,7 +702,7 @@ SMTP settings
     (";" mu4e-context-switch)
     ("j" mu4e~headers-jump-to-maildir)
 
-    ("." nil))
+    ("." nil)))
 #+end_src
 #+BEGIN_SRC emacs-lisp
 ;; neeed to define a mode to get this to work
@@ -616,26 +712,24 @@ SMTP settings
                 :name  "Arnav messages"
                 :query "date:1d..now and arnav and not to:arnav"
                 :key ?a))
+  (map! :map mu4e-headers-mode-map
+        "{"  #'mu4e-headers-query-prev
+        "}"  #'mu4e-headers-query-next
+        "O"  #'arnav/org-capture-mu4e
+
+        "A"  #'mu4e-headers-mark-for-action
+
+        "`"  #'mu4e-update-mail-and-index
+        "|"  #'mu4e-view-pipe)
   (map! (:map (mu4e-headers-mode-map mu4e-view-mode-map mu4e-compose-mode-map)
           :n "."  #'hydra-mu4e-headers/body
           :n "O" #'arnav/org-capture-mu4e)))
 #+END_SRC
 #+BEGIN_SRC emacs-lisp
 (def-package! org-mu4e
-  :after org
+  :after org mu4e
   :config
   (setq org-mu4e-link-query-in-headers-mode nil))
-#+END_SRC
-#+BEGIN_SRC emacs-lisp
-(map! :map mu4e-headers-mode-map
-      "{"  #'mu4e-headers-query-prev
-      "}"  #'mu4e-headers-query-next
-       "O"  #'my/org-capture-mu4e
-
-      "A"  #'mu4e-headers-mark-for-action
-
-      "`"  #'mu4e-update-mail-and-index
-      "|"  #'mu4e-view-pipe)
 #+END_SRC
 
 ** Go mode
@@ -716,37 +810,18 @@ Jumping here and there
       :n "s" #'org-edit-src-save)
 #+END_SRC
 
+Auto save org mode buffers if org agenda is open
+#+BEGIN_SRC emacs-lisp
+(add-hook 'org-agenda-mode-hook
+          (lambda ()
+            (add-hook 'auto-save-hook 'org-save-all-org-buffers nil t)
+            (auto-save-mode)))
+#+END_SRC
+
 Enable autoalist mode
 #+BEGIN_SRC emacs-lisp
 (def-package! org-autolist
   :hook (org-mode . org-autolist-mode))
-#+END_SRC
-*** Journaling or trying to
-
-#+BEGIN_SRC emacs-lisp
-(def-package! org-journal
-:commands (org-journal-new-entry org-journal-search-forever)
-;; TODO buffer not opening in journal mode
-  :config
-  (setq
-        org-journal-dir "~/Dropbox/org/journal/"
-        org-journal-file-format "%Y-%m-%d"
-        org-journal-date-prefix "#+TITLE: "
-        org-journal-enable-agenda-integration t
-        org-journal-date-format "%A, %B %d %Y"
-        org-journal-time-prefix "* "
-        org-journal-time-format "")
-  (map! :leader
-        (:prefix ("o" . "Orggg")
-          (:prefix ("j". "Journal")
-            :desc "new journal entry" "j" #'org-journal-new-entry
-            :desc "new journal entry" "s" #'org-journal-search-forever
-            )))
-  (map! :map org-journal-mode-map
-        :localleader
-        "j" #'org-journal-new-entry
-        "n" #'org-journal-next-entry
-        "p" #'org-journal-previous-entry))
 #+END_SRC
 
 *** Secretary
@@ -772,20 +847,16 @@ Enable autoalist mode
       (org-sec-assigned-with-view "TASK with" who)
       (org-sec-stuck-with-view "STUCK with" who)))
 
-  (defun my/wrapper-get-with (par &optional who)
-    "Select tasks marked as dowith=who, where who
-     defaults to the value of org-sec-with."
-    (org-sec-get-with))
   )
-#+END_SRC
 
+#+END_SRC
 *** GTD - or trying to
 
 **** States
 #+BEGIN_SRC emacs-lisp
 (after! org
   (setq org-todo-keywords
-        '((sequence "TODO(t)" "INPROGRESS(p/!)" "WAIT(w@/!)" "|" "DONE(d/!)" "CANCELLED(c@/!)")
+        '((sequence "TODO(t)" "INPROGRESS(p/!)" "WAIT(w@/!)" "|"  "DONE(d/!)" "CANCELLED(c@/!)")
           (sequence "TASK(f)" "|" "CANCELLED(c)" "DONE(D)")))
   (setq org-log-states-order-reversed t)
 
@@ -804,14 +875,16 @@ Enable autoalist mode
 (setq arnav/uber-calendar-file "~/Dropbox/org/calendar/arnav@uber.org")
 (map! :leader
       "a" nil
-      (:prefix "a"
+      (:prefix ("a" . "Agenda GTD")
         (:prefix ("g". "goto")
           :desc "open inbox file" "i" (λ! (find-file arnav/inbox-file) )
           :desc "open gtd file" "g" (λ! (find-file arnav/gtd-file) )
           :desc "open notes file" "n" (λ! (find-file arnav/notes-file) )
           :desc "open someday file" "s" (λ! (find-file arnav/someday-file) )
-          :desc "open tickler file" "T" (λ! (find-file arnav/tickler-file) )
-          )
+          :desc "open tickler file" "T" (λ! (find-file arnav/tickler-file) ))
+        (:prefix ("C" . "Clock")
+          :desc "active" "c" #'org-clock-goto
+          :desc "stop" "s" #'org-clock-out)
         "a" #'org-agenda-list
         "c" #'org-capture
         "l" #'org-agenda))
@@ -820,7 +893,7 @@ Enable autoalist mode
        '(("Effort_ALL" .
           "0:15 0:30 0:45 1:00 2:00 3:00 4:00 5:00 6:00 8:00")))
 
-(setq org-refile-targets '((arnav/gtd-file :maxlevel . 1)
+(setq org-refile-targets '((arnav/gtd-file :maxlevel . 2)
                            (arnav/someday-file :level . 1)
                            (arnav/tickler-file :maxlevel . 2)))
 (setq org-refile-use-outline-path t
@@ -877,7 +950,7 @@ Enable autoalist mode
   "Capture a TODO item via email."
   (let ((org-capture-templates '(("o" "Email [inbox]" entry
                                  (file+headline "~/Dropbox/org/gtd/inbox.org" "Tasks")
-                                 (file "~/Dropbox/org/templates/email.orgcaptmpl")
+                                 (file "~/Dropbox/org/templates/todo.orgcaptmpl")
                                  :empty-lines 1)
                                 )))
 
@@ -1040,6 +1113,35 @@ _vr_ reset      ^^                       ^^                 ^^
           )))
 #+END_SRC
 
+*** Journaling or trying to
+
+#+BEGIN_SRC emacs-lisp
+
+(def-package! org-journal
+  ;; TODO buffer not opening in journal mode
+  :init
+  (setq
+   org-journal-dir "~/Dropbox/org/journal/"
+        org-journal-file-format "%Y-%m-%d.org"
+        org-journal-date-prefix "#+TITLE: "
+        org-journal-date-format "%A, %B %d %Y"
+        org-journal-time-prefix "* "
+        org-journal-time-format "")
+
+  :config
+  (map! :leader
+        (:prefix ("o" . "Orggg")
+          (:prefix ("j". "Journal")
+            :desc "new journal entry" "j" #'org-journal-new-entry
+            :desc "new journal entry" "s" #'org-journal-search-forever
+            )))
+  (map! :map org-journal-mode-map
+        :localleader
+        "j" #'org-journal-new-entry
+        "n" #'org-journal-next-entry
+        "p" #'org-journal-previous-entry))
+#+END_SRC
+
 *** Calendar
 #+BEGIN_SRC emacs-lisp
 (after! org-gcal
@@ -1056,37 +1158,62 @@ _vr_ reset      ^^                       ^^                 ^^
 
 #+BEGIN_SRC emacs-lisp
 (after! org
-   ;; Resume clocking task when emacs is restarted
-   (org-clock-persistence-insinuate)
-   ;; Save the running clock and all clock history when exiting Emacs, load it on startup
-   (setq org-clock-persist t)
-   ;; Resume clocking task on clock-in if the clock is open
-   (setq org-clock-in-resume t)
-   ;; Do not prompt to resume an active clock, just resume it
-   (setq org-clock-persist-query-resume nil)
+  ;; Resume clocking task when emacs is restarted
+  (org-clock-persistence-insinuate)
+  ;; Save the running clock and all clock history when exiting Emacs, load it on startup
+  (setq org-clock-persist t)
+  ;; Resume clocking task on clock-in if the clock is open
+  (setq org-clock-in-resume t)
+  ;; Do not prompt to resume an active clock, just resume it
+  (setq org-clock-persist-query-resume nil)
 
-   ;; Change tasks to whatever when clocking out
-   (setq org-clock-out-switch-to-state "DONE")
-   ;; Change tasks to whatever when clocking in
-   (setq org-clock-in-switch-to-state "INPROGRESS")
-   ;; Save clock data and state changes and notes in the LOGBOOK drawer
-   (setq org-clock-into-drawer t)
-   ;; Sometimes I change tasks I'm clocking quickly - this removes clocked tasks
-   ;; with 0:00 duration
-   (setq org-clock-out-remove-zero-time-clocks t)
-   ;; Clock out when moving task to a done state
-   (setq org-clock-out-when-done t)
-   ;; Enable auto clock resolution for finding open clocks
-   ;; commenting out as I don't know what this does
-   ;; (setq org-clock-auto-clock-resolution (quote when-no-clock-is-running))
-   ;; Include current clocking task in clock reports
-   (setq org-clock-report-include-clocking-task t)
-   ;; use pretty things for the clocktable
-   (setq org-pretty-entities t)
+  ;; Change tasks to whatever when clocking out
+  (setq org-clock-out-switch-to-state nil)
+  ;; Change tasks to whatever when clocking in
+  (setq org-clock-in-switch-to-state "INPROGRESS")
+  ;; Save clock data and state changes and notes in the LOGBOOK drawer
+  (setq org-clock-into-drawer t)
+  ;; Sometimes I change tasks I'm clocking quickly - this removes clocked tasks
+  ;; with 0:00 duration
+  (setq org-clock-out-remove-zero-time-clocks t)
+  ;; Clock out when moving task to a done state
+  (setq org-clock-out-when-done t)
+  ;; Enable auto clock resolution for finding open clocks
+  ;; commenting out as I don't know what this does
+  ;; (setq org-clock-auto-clock-resolution (quote when-no-clock-is-running))
+  ;; Include current clocking task in clock reports
+  (setq org-clock-report-include-clocking-task t)
+  ;; use pretty things for the clocktable
+  (setq org-pretty-entities t)
   )
 
-#+END_SRC
 
+#+END_SRC
+#+BEGIN_SRC emacs-lisp
+(after! org
+  (defun wicked/org-clock-in-if-starting ()
+    "Clock in when the task is marked STARTED."
+    (when (and (string= org-state "INPROGRESS")
+               (not (string= org-last-state org-state)))
+      (org-clock-in)))
+  (add-hook 'org-after-todo-state-change-hook
+            'wicked/org-clock-in-if-starting)
+  (defadvice org-clock-in (after wicked activate)
+    "Set this task's status to 'INPROGRESS'."
+    (org-todo "INPROGRESS"))
+  (defun wicked/org-clock-out-if-waiting ()
+    "Clock out when the task is marked WAIT."
+    (when (and (string= org-state "WAIT")
+               (equal (marker-buffer org-clock-marker) (current-buffer))
+               (< (point) org-clock-marker)
+               (> (save-excursion (outline-next-heading) (point))
+                  org-clock-marker)
+               (not (string= org-last-state org-state)))
+      (org-clock-out)))
+  (add-hook 'org-after-todo-state-change-hook
+            'wicked/org-clock-out-if-waiting)
+)
+#+END_SRC
 *** Babel
 #+BEGIN_SRC emacs-lisp
 (after! org

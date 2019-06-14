@@ -6,7 +6,8 @@
        (evil +everywhere); come to the dark side, we have cookies
        file-templates    ; auto-snippets for empty files
        (lookup           ; helps you navigate your code and documentation
-        +docsets)        ; ...or in Dash docsets locally
+        +docsets
+        +devdocs)        ; ...or in Dash docsets locally
        snippets          ; my elves. They type so I don't have to
        workspaces        ; tab emulation, persistence & separate workspaces
 
@@ -14,7 +15,7 @@
        company           ; the ultimate code completion backend
        ;;helm             ; the *other* search engine for love and life
        ;;ido              ; the other *other* search engine...
-       ivy              ; a search engine for love and life
+       (ivy +childframe +icons)              ; a search engine for love and life
 
        :ui
        ;;deft              ; notational velocity for Emacs
@@ -30,9 +31,9 @@
        ;;neotree           ; a project drawer, like NERDTree for vim
        treemacs          ; a project drawer, like neotree but cooler
        (popup            ; tame sudden yet inevitable temporary windows
-        +alL             ; catch all popups that start with an asterix
+        +all             ; catch all popups that start with an asterix
         +defaults)       ; default popup rules
-       ;;pretty-code       ; replace bits of code with pretty symbols
+       ;; pretty-code       ; replace bits of code with pretty symbols
        ;;tabbar            ; FIXME an (incomplete) tab bar for Emacs
        ;;unicode           ; extended unicode support for various languages
        vc-gutter         ; vcs diff in the fringe
@@ -42,15 +43,15 @@
        :editor
        fold              ; (nigh) universal code folding
        (format +onsave)  ; automated prettiness
-       ;;lispy             ; vim for lisp, for people who dont like vim
+       ;; lispy             ; vim for lisp, for people who dont like vim
        multiple-cursors  ; editing in many places at once
-       ;;parinfer          ; turn lisp into python, sort of
+       parinfer          ; turn lisp into python, sort of
        rotate-text       ; cycle region at point between text candidates
 
        :emacs
        (dired            ; making dired pretty [functional]
-       ;;+ranger         ; bringing the goodness of ranger to dired
-       +icons          ; colorful icons for dired-mode
+        ;;+ranger         ; bringing the goodness of ranger to dired
+        +icons          ; colorful icons for dired-mode
         )
        electric          ; smarter, keyword-based electric-indent
        eshell            ; a consistent, cross-platform shell (WIP)
@@ -161,3 +162,4 @@
        ;; provides a Spacemacs-inspired keybinding scheme and a smartparens
        ;; config. Use it as a reference for your own modules.
        (default +bindings +smartparens))
+
