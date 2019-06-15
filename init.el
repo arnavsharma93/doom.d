@@ -1,5 +1,18 @@
 ;;; init.el -*- lexical-binding: t; -*-
-
+(setq ns-use-native-fullscreen nil)
+(setq ns-use-fullscreen-animation nil)
+(run-at-time "3sec" nil
+             (lambda ()
+               (let ((fullscreen (frame-parameter (selected-frame) 'fullscreen)))
+                 ;; If emacs has in fullscreen status, maximized window first, drag from Mac's single space.
+                 (when (memq fullscreen '(fullscreen fullboth))
+                   (set-frame-parameter (selected-frame) 'fullscreen 'maximized))
+                 ;; Manipulating a frame without waiting for the fullscreen
+                 ;; animation to complete can cause a crash, or other unexpected
+                 ;; behavior, on macOS (bug#28496).
+                 (sleep-for 0.5)
+                 ;; Call `toggle-frame-fullscreen' to fullscreen emacs.
+                 (toggle-frame-fullscreen))))
 (doom! :feature
        ;;debugger          ; FIXME stepping through code, to help you add bugs
        eval              ; run code, run (also, repls)
@@ -43,9 +56,9 @@
        :editor
        fold              ; (nigh) universal code folding
        (format +onsave)  ; automated prettiness
-       ;; lispy             ; vim for lisp, for people who dont like vim
+       lispy             ; vim for lisp, for people who dont like vim
        multiple-cursors  ; editing in many places at once
-       parinfer          ; turn lisp into python, sort of
+       ;; parinfer          ; turn lisp into python, sort of
        rotate-text       ; cycle region at point between text candidates
 
        :emacs
@@ -162,4 +175,3 @@
        ;; provides a Spacemacs-inspired keybinding scheme and a smartparens
        ;; config. Use it as a reference for your own modules.
        (default +bindings +smartparens))
-
