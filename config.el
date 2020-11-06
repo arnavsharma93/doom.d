@@ -25,16 +25,23 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-city-lights)
+(setq doom-theme 'doom-moonlight)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/org/")
+(setq org-directory "~/roam/")
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type 'relative)
 
+
+(setq arnav/org-inbox-file "~/roam/20201105194221-inbox.org")
+(setq arnav/org-gtd-file "~/roam/20201106172455-gtd.org")
+(setq arnav/org-someday-file "~/roam/20201106173207-someday.org")
+(setq arnav/org-tickler-file  "~/roam/20201106172535-tickler.org")
+(setq org-agenda-files (list arnav/org-inbox-file arnav/org-gtd-file arnav/org-tickler-file))
+(setq +org-capture-todo-file arnav/org-inbox-file)
 
 ;; Here are some additional functions/macros that could help you configure Doom:
 ;;
@@ -67,7 +74,7 @@
   ("C-n" evil-paste-pop-next "next")
   ("p" evil-paste-after nil)
   ("P" evil-paste-before nil)
-  ("C-L" counsel-yank-pop "list" :color blue))
+  ("l" counsel-yank-pop "list" :color blue))
 
 (map!
  :n "p" #'hydra-yank-pop/evil-paste-after
@@ -101,7 +108,7 @@
   'aw-leading-char-face nil
   :foreground "deep sky blue"
   :weight 'bold
-  :height 3.0)
+  :height 1.5)
  (set-face-attribute
   'aw-mode-line-face nil
   :inherit 'mode-line-buffer-id
@@ -169,6 +176,19 @@
         :desc "Pop up scratch buffer"       "s"   #'doom/open-scratch-buffer)
       :desc "Toggle other buffer" "TAB" #'mode-line-other-buffer)
 
+(map! :map org-mode-map
+      :localleader
+      "i" nil
+      (:prefix ("i" . "insert")
+       "s" #'org-insert-subheading
+       "a"      #'+org/insert-item-above
+       "b"    #'+org/insert-item-below
+       "i" #'org-toggle-item))
+
+(map! :map proced-mode-map
+      :localleader
+      "k" #'proced-send-signal)
+
 ;; search keybindings
 (map! :leader
       ;;; <leader> / --- search
@@ -215,14 +235,18 @@
 
 
 ;; python stuff
-(after! python
+(add-hook! 'python-mode-local-vars-hook :local
   (pyenv-mode-set "venv")
   (pyvenv-activate "~/.pyenv/versions/venv")
   (setq python-indent-offset 4
         python-shell-interpreter "python3"))
 
-(after! flycheck
-  (add-to-list 'flycheck-disabled-checkers 'python-mypy))
+(add-hook! 'python-mode-hook
+  (push 'python-mypy flycheck-disabled-checkers))
+
+(map! :leader
+      (:prefix ("a" . "apps")
+       "t" #'ivy-taskrunner))
 
 (map!
  (:after python
@@ -258,3 +282,118 @@
   "^\\*tide-" :size 0.5 :vslot -4 :select nil :quit t :side 'right :autosave 'ignore :modeline t)
 (set-popup-rule!
   "^\\*format-all" :size 0.5 :vslot -1 :select nil :quit t :side 'right :autosave 'ignore :modeline nil)
+
+
+
+(defun ivy-connect-bluetooth ()
+  "Connect/Disconnect to paired bluetooth device"
+  (interactive)
+  (ivy-read "(Dis)connect"
+            (seq-map (lambda ( item )
+                       (let* ((device (split-string item " - "))
+                              (mac (nth 0 device))
+                              (name (nth 1 device)))
+                         (propertize name 'mac mac)))
+                     (seq-filter (lambda (line)
+                                   (string-match-p "^[0-9a-f]\\{2\\}" line))
+                                 (with-current-buffer (get-buffer-create "*BluetoothConnector*")
+                                   (erase-buffer)
+                                   (unless (eq 64 (call-process "BluetoothConnector" nil (current-buffer)))
+                                     (error (buffer-string)))
+                                   (split-string (buffer-string) "\n"))))
+            :require-match t
+            :preselect (when (boundp 'misc-bluetooth-connect--history)
+                         (nth 0 misc-bluetooth-connect--history))
+            :history 'misc-bluetooth-connect--history
+            :caller 'toggle-bluetooth-connection
+            :action (lambda (device)
+                      (start-process "BluetoothConnector" (get-buffer-create "*BluetoothConnector*") "BluetoothConnector" (get-text-property 0 'mac device) "--notify"))))
+
+(map! :leader
+      "ab" #'ivy-connect-bluetooth)
+
+(setq org-roam-directory "~/roam")
+(setq deft-directory "~/roam")
+
+
+(map! :localleader
+      :map org-capture-mode-map
+      :n "c" #'org-capture-finalize
+      :n "k" #'org-capture-kill
+      :n "w" #'org-capture-refile)
+
+
+(after! org
+  (setq org-capture-templates
+        `(("t" "TODO" entry (file arnav/org-inbox-file)
+           ,(concat "* TODO %?\n"
+                    "/Entered on/ %u"))
+          ("p" "PROJ" entry (file arnav/org-inbox-file)
+           ,(concat "* PROJ %?\n"
+                    "/Entered on/ %u"))
+          ("f" "Future" entry
+           (file+headline arnav/org-tickler-file "Tickler")
+           "* %i%? \n %U")
+
+          ("c" "org-protocol-capture" entry (file arnav/org-inbox-file)
+           "* TODO [[%:link][%:description]]\n\n %i"
+           :immediate-finish t)))
+  (setq org-refile-targets '((arnav/org-gtd-file :maxlevel . 3)
+                             (arnav/org-someday-file :level . 1)
+                             (arnav/org-tickler-file :maxlevel . 2)))
+  (org-clock-persistence-insinuate)
+  (setq org-clock-persist t)
+  (setq org-clock-in-resume t)
+  (setq org-clock-persist-query-resume nil)
+  (setq org-clock-out-remove-zero-time-clocks t)
+  (setq org-clock-out-when-done t)
+  (setq org-clock-auto-clock-resolution (quote when-no-clock-is-running))
+  (setq org-clock-report-include-clocking-task t)
+
+  (setq org-todo-keywords
+        '((sequence
+           "TODO(t)"  ; A task that needs doing & is ready to do
+           "PROJ(p)"  ; A project, which usually contains other tasks
+           "ACTIVE(a)"  ; A task that is in progress
+           "WAIT(w@/!)"  ; Something external is holding up this task
+           "HOLD(h!)"  ; This task is paused/on hold because of me
+           "|"
+           "DONE(d!)"  ; Task successfully completed
+           "KILL(k@/!)")) ; Task was cancelled, aborted or is no longer applicable
+        org-todo-keyword-faces
+        '(("ACTIVE" . +org-todo-active)
+          ("WAIT" . +org-todo-onhold)
+          ("HOLD" . +org-todo-onhold)
+          ("PROJ" . +org-todo-project)))
+
+  (setq org-clock-in-switch-to-state "ACTIVE"))
+
+
+(defun arnav/visit-inbox-file ()
+  (interactive)
+  (find-file arnav/org-inbox-file))
+
+(defun arnav/visit-gtd-file ()
+  (interactive)
+  (find-file arnav/org-gtd-file))
+
+(use-package! dired-subtree)
+
+(use-package! dired-narrow
+  :config
+  (map! :map dired-mode-map
+        :n "/" #'dired-narrow))
+
+(map! :leader
+      (:prefix "o"
+      "A" #'org-agenda-list
+       (:prefix ("g" . "goto")
+        "i" #'arnav/visit-inbox-file
+        "g" #'arnav/visit-gtd-file)))
+
+
+(use-package! atomic-chrome
+  :defer t
+  :config
+  (atomic-chrome-start-server))
+

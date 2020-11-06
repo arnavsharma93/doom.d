@@ -48,7 +48,7 @@
 ;(unpin! pinned-package another-pinned-package)
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;(unpin! t)
-(package! tldr)
 (package! link-hint)
 (package! ace-window)
-
+(package! atomic-chrome)
+(package! dired-subtree)
